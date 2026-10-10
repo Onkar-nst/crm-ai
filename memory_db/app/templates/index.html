@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Context & Memory System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-blur: blur(16px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--surface);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            color: #cbd5e1;
+        }
+
+        .supplier-list {
+            list-style: none;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .supplier-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .supplier-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--border);
+        }
+
+        .trust-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .trust-badge.low {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .trust-badge.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Context & Memory System</h1>
+        <p>Real-time Supplier Trust & Knowledge Retrieval</p>
+    </header>
+
+    <div class="container">
+        <!-- Left Column: Query Engine -->
+        <div class="panel">
+            <h2>Query Engine</h2>
+            <div class="form-group">
+                <label for="queryInput">Business Query</label>
+                <textarea id="queryInput" rows="4" placeholder="e.g., Are there any recent quality issues with Supplier A?"></textarea>
+            </div>
+            <button onclick="submitQuery()" id="queryBtn">Process Query</button>
+            
+            <div class="result-box" id="queryResult">
+                // Results will appear here...
+            </div>
+        </div>
+
+        <!-- Right Column: System State & Simulation -->
+        <div class="panel">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('suppliers')">Suppliers</div>
+                <div class="tab" onclick="switchTab('simulate')">Simulate Event</div>
+            </div>
+
+            <!-- Suppliers Tab -->
+            <div id="suppliersTab" class="tab-content active">
+                <button onclick="loadSuppliers()" style="margin-bottom: 1rem; background: rgba(255,255,255,0.1);">Refresh Suppliers</button>
+                <ul class="supplier-list" id="supplierList">
+                    <li style="color: #94a3b8; text-align: center; padding: 2rem;">Loading...</li>
+                </ul>
+                <div class="result-box" id="memoryResult" style="display: none; margin-top: 1rem;"></div>
+            </div>
+
+            <!-- Simulate Event Tab -->
+            <div id="simulateTab" class="tab-content">
+                <div class="form-group">
+                    <label>Supplier ID</label>
+                    <input type="text" id="simSupplierId" placeholder="e.g., SUP123">
+                </div>
+                <div class="form-group">
+                    <label>Event Type</label>
+                    <select id="simEventType">
+                        <option value="QualityEvent">Quality Event (Defects, Recalls)</option>
+                        <option value="PaymentEvent">Payment Event (Delays, Deductions)</option>
+                        <option value="LogisticsNote">Logistics Note (Shipping delays)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Severity (0-10)</label>
+                    <input type="number" id="simSeverity" min="0" max="10" value="5">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="simDescription" rows="3" placeholder="Describe the event..."></textarea>
+                </div>
+                <button onclick="submitEvent()" id="eventBtn">Inject Memory Event</button>
+                <div class="result-box" id="eventResult" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if(tabId === 'suppliers') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('suppliersTab').classList.add('active');
+                loadSuppliers();
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('simulateTab').classList.add('active');
+            }
+        }
+
+        // Query functionality
+        async function submitQuery() {
+            const query = document.getElementById('queryInput').value;
+            const btn = document.getElementById('queryBtn');
+            const resultBox = document.getElementById('queryResult');
+            
+            if (!query) return alert('Please enter a query');
+
+            btn.innerHTML = '<span class="loading"></span> Processing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query})
+                });
+                const data = await res.json();
+                resultBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                resultBox.textContent = `Error: ${err.message}`;
+            } finally {
+                btn.innerHTML = 'Process Query';
+                btn.disabled = false;
+            }
+        }
+
+        // Supplier functionality
+        async function loadSuppliers() {
+            const list = document.getElementById('supplierList');
+            try {
+                const res = await fetch('/suppliers');
+                const data = await res.json();
+                
+                list.innerHTML = '';
+                
+                if(!data.suppliers || data.suppliers.length === 0) {
+                    list.innerHTML = '<li style="color: #94a3b8; text-align: center; padding: 2rem;">No suppliers found in DB</li>';
+                    return;
+                }
+
+                data.suppliers.forEach(sup => {
+                    const li = document.createElement('li');
+                    li.className = 'supplier-item';
+                    li.onclick = () => loadMemories(sup.supplier_id);
+                    
+                    let badgeClass = 'trust-badge';
+                    if(sup.trust_score < 0.4) badgeClass += ' low';
+                    else if(sup.trust_score < 0.7) badgeClass += ' medium';
+
+                    li.innerHTML = `
+                        <div>
+                            <strong>${sup.name || sup.supplier_id}</strong>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">${sup.supplier_id}</div>
+                        </div>
+                        <div class="${badgeClass}">Trust: ${sup.trust_score}</div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                list.innerHTML = `<li style="color: #f87171;">Error loading suppliers: ${err.message}</li>`;
+            }
+        }
+
+        async function loadMemories(supplierId) {
+            const resultBox = document.getElementById('memoryResult');
+            resultBox.style.display = 'block';
+            resultBox.textContent = 'Loading memories...';
+            
+            try {
+                const res = await fetch(`/memories/${supplierId}`);
+                const data = await res.json();
+                resultBox.textContent = `Memories for ${supplierId}:\n\n` + JSON.stringify(data.memories, null, 2);
+            } catch (err) {
+                resultBox.textContent = `Error: ${err.message}`;
+            }
+        }
+
+        // Event Simulation functionality
+        async function submitEvent() {
+            const supplier_id = document.getElementById('simSupplierId').value;
+            const event_type = document.getElementById('simEventType').value;
+            const severity = parseInt(document.getElementById('simSeverity').value);
+            const description = document.getElementById('simDescription').value;
+            
+            const btn = document.getElementById('eventBtn');
+            const resultBox = document.getElementById('eventResult');
+
+            if (!supplier_id || !description) return alert('Please fill required fields');
+
+            btn.innerHTML = '<span class="loading"></span> Injecting...';
+            btn.disabled = true;
+            resultBox.style.display = 'block';
+
+            try {
+                const res = await fetch('/memory/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({supplier_id, event_type, severity, description})
+                });
+                const data = await res.json();
+                resultBox.textContent = JSON.stringify(data, null, 2);
+                
+                if(data.status === 'success') {
+                    document.getElementById('simDescription').value = '';
+                }
+            } catch (err) {
+                resultBox.textContent = `Error: ${err.message}`;
+            } finally {
+                btn.innerHTML = 'Inject Memory Event';
+                btn.disabled = false;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSuppliers();
+        });
+    </script>
+</body>
+</html>
